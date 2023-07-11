@@ -8,17 +8,18 @@ from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfVectorizer
 
 class MovieRecommenderTraining:
-    def __init__(self):
+    def __init__(self, mongodb_connection_string):
         self.movies_metadata = None
         self.stemmer = SnowballStemmer("english")
         self.cosine_sim = None
         self.tfidf_matrix = None
         self.titles = None
         self.indices = None
+        self.mongodb_connection_string = mongodb_connection_string
         
     def load_data(self):
         # Load data from MongoDB collection
-        client = pymongo.MongoClient("mongodb://user:pass@localhost/")
+        client = pymongo.MongoClient(self.mongodb_connection_string)
         db = client["metadata"]
         collection = db["movies_metadata"]
         self.movies_metadata = pd.DataFrame(list(collection.find()))
