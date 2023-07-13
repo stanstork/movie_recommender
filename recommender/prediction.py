@@ -2,6 +2,7 @@ import pickle
 import numpy as np
 from sklearn.metrics.pairwise import linear_kernel
 
+
 class MovieRecommenderPrediction:
     def __init__(self, model_file):
         self.model_file = model_file
@@ -10,8 +11,9 @@ class MovieRecommenderPrediction:
         self.tfidf_matrix = None
         self.titles = None
         self.indices = None
-    
+
     def load_model(self):
+        # Load the trained model from a file
         with open(self.model_file, "rb") as file:
             model = pickle.load(file)
         self.movies_metadata = model["movies_metadata"]
@@ -19,8 +21,11 @@ class MovieRecommenderPrediction:
         self.tfidf_matrix = model["tfidf_matrix"]
         self.titles = model["titles"]
         self.indices = model["indices"]
-        
+
+        print("Model loaded from:", self.model_file)
+
     def predict_user_preference(self, liked_movies, movie_id):
+        # Predict user preference based on cosine similarity
         liked_movie_indices = self.movies_metadata.index[
             self.movies_metadata["id"].isin(liked_movies)
         ]
@@ -31,9 +36,13 @@ class MovieRecommenderPrediction:
         similarity_scores = self.cosine_sim[target_index][liked_movie_indices]
         avg_similarity_score = np.mean(similarity_scores)
 
+        print("User preference prediction (Cosine Similarity):",
+              avg_similarity_score)
+
         return avg_similarity_score
-    
+
     def predict_user_preference_tfidf(self, liked_movies, movie_id):
+        # Predict user preference based on TF-IDF and linear kernel
         liked_movie_indices = self.movies_metadata.index[
             self.movies_metadata["id"].isin(liked_movies)
         ]
@@ -46,9 +55,12 @@ class MovieRecommenderPrediction:
         ).flatten()
         avg_similarity_score = np.mean(similarity_scores)
 
+        print("User preference prediction (TF-IDF):", avg_similarity_score)
+
         return avg_similarity_score
 
     def predict_user_preference_extended(self, liked_movies, movie_id):
+        # Predict user preference based on both cosine similarity and TF-IDF
         movie_ids = []
         for lm in liked_movies:
             movie_ids.append(lm)
@@ -56,13 +68,19 @@ class MovieRecommenderPrediction:
             for s in similar.values:
                 movie_ids.append(s[0])
 
-        tfidf_preference = self.predict_user_preference_tfidf(movie_ids, movie_id)
+        tfidf_preference = self.predict_user_preference_tfidf(
+            movie_ids, movie_id)
         cosine_preference = self.predict_user_preference(movie_ids, movie_id)
-        
+
+        print("User preference prediction (Cosine Similarity + TF-IDF):",
+              tfidf_preference, cosine_preference)
+
         return (tfidf_preference, cosine_preference)
-    
+
     def get_recommendations(self, movie_id):
-        idx = self.movies_metadata.index[self.movies_metadata["id"] == movie_id][0]
+        # Get movie recommendations based on cosine similarity scores
+        idx = self.movies_metadata.index[self.movies_metadata["id"]
+                                         == movie_id][0]
 
         # Compute the cosine similarity scores between the target movie and all other movies
         sim_scores = list(enumerate(self.cosine_sim[idx]))
@@ -100,8 +118,9 @@ class MovieRecommenderPrediction:
         # Sort the movies based on the weighted rating and return the top 10 recommendations
         qualified = qualified.sort_values("wr", ascending=False).head(10)
         return qualified
-    
+
     def weighted_rating(self, x, m, C):
+        # Calculate the weighted rating for a movie
         v = x["vote_count"]
         R = x["vote_average"]
         return (v / (v + m) * R) + (m / (m + v) * C)
