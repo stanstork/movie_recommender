@@ -1,4 +1,6 @@
 import os
+import threading
+
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
 
@@ -17,6 +19,20 @@ prediction = MovieRecommenderPrediction("models/model.pkl")
 prediction.load_model()
 
 app = Flask(__name__)
+
+
+def retrain_model():
+    try:
+        mongodb_connection_string = os.getenv("MONGODB_CONNECTION_STRING")
+        training = MovieRecommenderTraining(mongodb_connection_string)
+        training.train("models/model.pkl")
+
+        global prediction
+        prediction.load_model()
+
+        return {"status": "success", "message": "Model retrained successfully"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
 
 
 @app.route('/predict', methods=['POST'])
@@ -43,16 +59,8 @@ def predict():
 
 @app.route('/retrain', methods=['POST'])
 def retrain():
-    try:
-        training = MovieRecommenderTraining(mongodb_connection_string)
-        training.train("models/model.pkl")
-
-        global prediction
-        prediction.load_model()
-
-        return jsonify({"status": "success", "message": "Model retrained successfully"})
-    except Exception as e:
-        return jsonify({"status": "error", "message": str(e)})
+    threading.Thread(target=retrain_model).start()
+    return jsonify({"status": "success", "message": "Model retraining started"})
 
 
 if __name__ == '__main__':
