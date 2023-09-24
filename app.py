@@ -55,8 +55,8 @@ def predict():
         )
 
     return jsonify({
-        "predictions": predictions
-    })
+        "predictions": {"predictions": predictions
+                        }})
 
 
 @app.route('/retrain', methods=['POST'])
