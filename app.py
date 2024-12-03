@@ -10,7 +10,7 @@ from recommender.training import MovieRecommenderTraining
 load_dotenv()
 
 # Training phase
-mongodb_connection_string = os.getenv("MONGODB_CONNECTION_STRING")
+mongodb_connection_string = "mongodb://user:pass@localhost:27017"#os.getenv("MONGODB_CONNECTION_STRING")
 training = MovieRecommenderTraining(mongodb_connection_string)
 training.train("models/model.pkl")
 
@@ -44,13 +44,11 @@ def predict():
     predictions = []
 
     for movie_id in movie_ids:
-        prediction_result = prediction.predict_user_preference_extended(
-            liked_movie_ids, movie_id)
+        avg_similarity_score = prediction.predict_user_preference(liked_movie_ids, movie_id)
         predictions.append(
             {
                 "movie_id": movie_id,
-                "tfidf": prediction_result[0],
-                "cosine": prediction_result[1],
+                "score": avg_similarity_score,
             }
         )
 

@@ -1,19 +1,17 @@
 import pickle
-from nltk.stem.snowball import SnowballStemmer
+# from nltk.stem.snowball import SnowballStemmer
 import numpy as np
 import pandas as pd
 import pymongo
 from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.feature_extraction.text import TfidfVectorizer
 
 
 class MovieRecommenderTraining:
     def __init__(self, mongodb_connection_string):
         self.movies_metadata = None
-        self.stemmer = SnowballStemmer("english")
+        # self.stemmer = SnowballStemmer("english")
         self.cosine_sim = None
-        self.tfidf_matrix = None
         self.titles = None
         self.indices = None
         self.mongodb_connection_string = mongodb_connection_string
@@ -21,8 +19,8 @@ class MovieRecommenderTraining:
     def load_data(self):
         # Load data from MongoDB collection
         client = pymongo.MongoClient(self.mongodb_connection_string)
-        db = client["metadata"]
-        collection = db["movies_metadata"]
+        db = client["movieDB"]
+        collection = db["movieDetails"]
         self.movies_metadata = pd.DataFrame(list(collection.find()))
 
         print("Data loaded from MongoDB collection.")
@@ -56,9 +54,9 @@ class MovieRecommenderTraining:
         self.movies_metadata["keywords"] = self.movies_metadata["keywords"].apply(
             lambda x: [i["name"] for i in x] if isinstance(x, list) else []
         )
-        self.movies_metadata["keywords"] = self.movies_metadata["keywords"].apply(
-            lambda x: [self.stemmer.stem(i) for i in x]
-        )
+        # self.movies_metadata["keywords"] = self.movies_metadata["keywords"].apply(
+        #     lambda x: [self.stemmer.stem(i) for i in x]
+        # )
         self.movies_metadata["keywords"] = self.movies_metadata["keywords"].apply(
             lambda x: [str.lower(i.replace(" ", "")) for i in x]
         )
@@ -79,16 +77,11 @@ class MovieRecommenderTraining:
         print("Calculating similarity...")
 
         count = CountVectorizer(
-            analyzer="word", ngram_range=(1, 2), min_df=0, stop_words="english"
+            analyzer="word", ngram_range=(1, 2), min_df=0.0, stop_words="english"
         )
-        tfidf = TfidfVectorizer(
-            analyzer="word", ngram_range=(1, 2), min_df=0, stop_words="english"
-        )
-
         count_matrix = count.fit_transform(self.movies_metadata["soup"])
 
         self.cosine_sim = cosine_similarity(count_matrix, count_matrix)
-        self.tfidf_matrix = tfidf.fit_transform(self.movies_metadata["soup"])
         self.movies_metadata = self.movies_metadata.reset_index()
         self.titles = self.movies_metadata["title"]
         self.indices = pd.Series(
@@ -102,7 +95,6 @@ class MovieRecommenderTraining:
         model = {
             "movies_metadata": self.movies_metadata,
             "cosine_sim": self.cosine_sim,
-            "tfidf_matrix": self.tfidf_matrix,
             "titles": self.titles,
             "indices": self.indices
         }

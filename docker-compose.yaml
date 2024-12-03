@@ -1,11 +1,11 @@
-version: '3'
 services:
   movie-recommender:
     build:
       context: .
     ports:
-      - 5001:5000
+      - 5002:5000
     environment:
       - FLASK_APP=app.py
-      - MONGODB_CONNECTION_STRING=mongodb://user:pass@host.docker.internal/
+      - MONGODB_CONNECTION_STRING=mongodb://user:pass@172.17.0.1/ # Comment on Windows
+#     - MONGODB_CONNECTION_STRING=mongodb://user:pass@host.docker.internal/ # Uncomment on Windows
     restart: always
